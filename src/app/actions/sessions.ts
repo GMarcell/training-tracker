@@ -10,6 +10,7 @@ import {
   sessionNotesSchema,
   startSessionSchema,
   weekTargetSchema,
+  benchmarkDateSchema,
   type SaveResult,
   type StartSessionState,
 } from "@/lib/session-validation";
@@ -20,6 +21,19 @@ function revalidateSessionViews(): void {
   revalidatePath("/");
   revalidatePath("/week");
 }
+
+const DEFAULT_PRACTICE_MENU = [
+  { name: "Warm-up + mobility", targetText: "1 x 10 min" },
+  { name: "Skill / team drills", targetText: "4 x 8 min" },
+  { name: "Conditioning games", targetText: "4 x 3 min" },
+  { name: "Cooldown", targetText: "1 x 5 min" },
+];
+
+const DEFAULT_MATCH_MENU = [
+  { name: "Warm-up", targetText: "1 x 15 min" },
+  { name: "Match", targetText: "1 x 80 min" },
+  { name: "Cooldown + recovery", targetText: "1 x 10 min" },
+];
 
 /**
  * Starts (or quick-logs) a session for a calendar date. One session per date is
@@ -46,6 +60,8 @@ export async function startSessionAction(
     where: { id: dayTypeId, userId: user.id, archived: false },
     select: {
       id: true,
+      kind: true,
+      isMatch: true,
       exercises: {
         where: { archived: false },
         orderBy: { sortOrder: "asc" },
@@ -72,16 +88,24 @@ export async function startSessionAction(
 
   let sessionId: string;
   try {
+    const menu =
+      dayType.exercises.length > 0
+        ? dayType.exercises
+        : dayType.kind === "ACTIVITY"
+          ? dayType.isMatch
+            ? DEFAULT_MATCH_MENU
+            : DEFAULT_PRACTICE_MENU
+          : dayType.exercises;
     const session = await prisma.session.create({
       data: {
         userId: user.id,
         dayTypeId: dayType.id,
         date: calendarDate,
         entries: {
-          create: dayType.exercises.map((exercise, index) => {
+          create: menu.map((exercise, index) => {
             const target = parseTarget(exercise.targetText);
             return {
-              exerciseId: exercise.id,
+              exerciseId: "id" in exercise ? exercise.id : undefined,
               name: exercise.name,
               sets: target.sets,
               reps: target.reps,
@@ -211,4 +235,46 @@ export async function clearWeekTargetAction(formData: FormData): Promise<void> {
   });
 
   revalidateSessionViews();
+}
+
+/** Updates the recurring weekdays for one of the user's program day types. */
+export async function updateDayTypeScheduleAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const dayTypeId = formData.get("dayTypeId");
+  const weekdays = formData
+    .getAll("weekdays")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
+
+  if (typeof dayTypeId !== "string") return;
+
+  await prisma.dayType.updateMany({
+    where: { id: dayTypeId, userId: user.id, archived: false },
+    data: { plannedWeekdays: [...new Set(weekdays)].sort((a, b) => a - b) },
+  });
+
+  revalidatePath("/program");
+  revalidatePath("/");
+  revalidatePath("/week");
+}
+
+export async function saveBenchmarkAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const parsed = benchmarkDateSchema.safeParse({ date: formData.get("date") });
+  if (!parsed.success) return;
+  const metrics = await prisma.metric.findMany({ where: { userId: user.id }, select: { id: true } });
+  const values = metrics.flatMap((metric) => {
+    const raw = formData.get(`value_${metric.id}`);
+    if (typeof raw !== "string" || raw.trim() === "") return [];
+    const value = Number(raw);
+    return Number.isFinite(value) ? [{ metricId: metric.id, value }] : [];
+  });
+  if (values.length === 0) return;
+  const date = parseDateOnly(parsed.data.date);
+  await prisma.benchmark.upsert({
+    where: { userId_date: { userId: user.id, date } },
+    create: { userId: user.id, date, values: { create: values } },
+    update: { values: { deleteMany: {}, create: values } },
+  });
+  revalidatePath("/progress");
 }

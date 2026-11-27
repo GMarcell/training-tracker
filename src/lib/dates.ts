@@ -96,3 +96,17 @@ export function formatShortDate(dateString: string): string {
     timeZone: "UTC",
   }).format(date);
 }
+
+/** Counts consecutive logged training days, starting today or yesterday. */
+export function trainingStreak(today: string, sessionDates: string[]): number {
+  const logged = new Set(sessionDates);
+  let cursor = logged.has(today) ? today : addDays(today, -1);
+  let streak = 0;
+
+  while (logged.has(cursor)) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+
+  return streak;
+}

@@ -103,8 +103,8 @@ describe("normalizeGeneratedProgram", () => {
     expect(program.dayTypes[0].plannedWeekdays).toEqual([1, 3]);
   });
 
-  it("strips exercises from activity days", () => {
-    expect(program.dayTypes[1].exercises).toEqual([]);
+  it("keeps the menu for activity days", () => {
+    expect(program.dayTypes[1].exercises[0].name).toBe("Should be dropped");
   });
 
   it("keeps only the first match day", () => {

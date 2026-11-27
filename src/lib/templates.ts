@@ -88,7 +88,13 @@ export const RUGBY_SEVENS: StarterTemplate = {
       name: "Team practice",
       kind: "ACTIVITY",
       plannedWeekdays: [2, 4],
-      exercises: [],
+      exercises: [
+        { name: "Warm-up + mobility", targetText: "1 x 10 min" },
+        { name: "Handling and passing", targetText: "4 x 5 min" },
+        { name: "Skill / team drills", targetText: "4 x 8 min" },
+        { name: "Conditioning games", targetText: "4 x 3 min" },
+        { name: "Cooldown", targetText: "1 x 5 min" },
+      ],
     },
     {
       name: "Match",
@@ -96,7 +102,11 @@ export const RUGBY_SEVENS: StarterTemplate = {
       plannedWeekdays: [7],
       countsTowardTarget: false,
       isMatch: true,
-      exercises: [],
+      exercises: [
+        { name: "Warm-up", targetText: "1 x 15 min" },
+        { name: "Match", targetText: "1 x 80 min" },
+        { name: "Cooldown + recovery", targetText: "1 x 10 min" },
+      ],
     },
   ],
   metrics: [

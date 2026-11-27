@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/page-header";
 import { logoutAction } from "@/app/actions/auth";
 import { requireUser } from "@/lib/session";
+import { PhaseFourSettings } from "@/components/phase-four-tools";
 
 export const metadata = { title: "Settings" };
 
@@ -22,12 +23,20 @@ export default async function SettingsPage() {
         <Row label="Timezone" value={user.timezone} />
       </section>
 
+      <PhaseFourSettings />
+
       <section className="card mt-4 px-4 py-4">
         <h2 className="text-sm font-semibold text-ink">Data</h2>
         <p className="mt-1 text-sm leading-6 text-muted">
-          CSV export and import of your logs and benchmarks arrive in Phase 2.
-          Editing your target and timezone arrives with Settings in Phase 3.
+          Offline shell support is enabled. Training writes still need a
+          connection and are saved once the server confirms them.
         </p>
+      </section>
+
+      <section className="card mt-4 px-4 py-4">
+        <h2 className="text-sm font-semibold text-ink">Export your data</h2>
+        <p className="mt-1 text-sm leading-6 text-muted">Download sessions and benchmarks as a CSV file.</p>
+        <a href="/api/export" className="mt-3 block rounded-xl bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-ink hover:bg-accent-strong">Download CSV</a>
       </section>
 
       <form action={logoutAction} className="mt-4">

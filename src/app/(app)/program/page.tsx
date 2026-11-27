@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { DayScheduleForm } from "@/components/day-schedule-form";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -125,6 +126,11 @@ export default async function ProgramPage({
                   Activity session — no exercises required.
                 </p>
               )}
+
+              <DayScheduleForm
+                dayTypeId={dayType.id}
+                plannedWeekdays={dayType.plannedWeekdays}
+              />
             </section>
           ))}
         </div>

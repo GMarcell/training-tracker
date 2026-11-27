@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   generateProgramAction,
   saveGeneratedProgramAction,
@@ -25,6 +25,7 @@ export function ProgramBuilder({ configured }: { configured: boolean }) {
     generateProgramAction,
     undefined,
   );
+  const [goal, setGoal] = useState("");
 
   if (!configured) {
     return (
@@ -40,6 +41,21 @@ export function ProgramBuilder({ configured }: { configured: boolean }) {
 
   const input = state?.input;
   const program = state?.program;
+
+  const goalExamples = [
+    {
+      label: "General fitness",
+      value: "Build general fitness, strength and endurance so I feel healthier day to day.",
+    },
+    {
+      label: "Rugby body",
+      value: "Build a strong, powerful body for rugby with better acceleration, contact strength and repeat-effort fitness.",
+    },
+    {
+      label: "Sport performance",
+      value: "Improve my performance for my sport with a balanced mix of strength, speed, power and conditioning.",
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -68,10 +84,23 @@ export function ProgramBuilder({ configured }: { configured: boolean }) {
             minLength={10}
             maxLength={500}
             rows={3}
-            defaultValue={input?.goal ?? ""}
+            value={goal}
+            onChange={(event) => setGoal(event.target.value)}
             placeholder="Get stronger for next season, add 5 kg to my squat, and keep up with pre-season running."
             className="field min-h-24 resize-y py-2.5"
           />
+          <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Goal examples">
+            {goalExamples.map((example) => (
+              <button
+                key={example.label}
+                type="button"
+                onClick={() => setGoal(example.value)}
+                className="rounded-lg border border-line bg-raised px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
+              >
+                {example.label}
+              </button>
+            ))}
+          </div>
           {state?.fieldErrors?.goal?.[0] ? (
             <p className="mt-1.5 text-xs text-danger">{state.fieldErrors.goal[0]}</p>
           ) : null}

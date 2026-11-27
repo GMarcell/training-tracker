@@ -21,9 +21,9 @@ a practical, progressive training program for one person.
 Rules:
 - Use only the equipment the person has. Never prescribe lifts that need
   unavailable equipment.
-- Every training day gets 3-8 exercises with a clear set x rep target, e.g.
-  "4 x 6", "3 x 10 each leg", "3 x 30 sec". Activity days (practice, match,
-  conditioning class) have no exercises.
+- Every training or activity day gets 3-8 menu items with a clear target, e.g.
+  "4 x 6", "3 x 10 each leg", "3 x 30 sec". For practice or match days,
+  use menu items such as warm-up, skills, conditioning, and cooldown.
 - Weekday numbers: 1 = Monday through 7 = Sunday. Spread training days so
   hard days are not back-to-back when possible.
 - The weekly target is the number of sessions that count toward the goal.

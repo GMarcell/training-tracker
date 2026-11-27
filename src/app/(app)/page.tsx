@@ -2,7 +2,16 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { ProgressRing } from "@/components/progress-ring";
 import { StartSessionForm } from "@/components/start-session-form";
-import { addDays, parseDateOnly, startOfWeek, todayInTimeZone } from "@/lib/dates";
+import { PastSessionLogger } from "@/components/past-session-logger";
+import { GoalCountdown } from "@/components/phase-four-tools";
+import {
+  addDays,
+  formatDateOnly,
+  parseDateOnly,
+  startOfWeek,
+  todayInTimeZone,
+  trainingStreak,
+} from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { toWeekSessions, weekSessionSelect } from "@/lib/session-data";
@@ -20,7 +29,7 @@ export default async function TodayPage() {
   const today = todayInTimeZone(user.timezone);
   const weekStart = startOfWeek(today);
 
-  const [dayTypes, todaySession, weekSessions, override] = await Promise.all([
+  const [dayTypes, todaySession, weekSessions, override, recentSessions] = await Promise.all([
     prisma.dayType.findMany({
       where: { userId: user.id, archived: false },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -54,7 +63,18 @@ export default async function TodayPage() {
       },
       select: { target: true },
     }),
+    prisma.session.findMany({
+      where: { userId: user.id, date: { lte: parseDateOnly(today) } },
+      orderBy: { date: "desc" },
+      take: 366,
+      select: { date: true },
+    }),
   ]);
+
+  const streak = trainingStreak(
+    today,
+    recentSessions.map((session) => formatDateOnly(session.date)),
+  );
 
   const summary = summarizeWeek({
     weekStart,
@@ -123,6 +143,25 @@ export default async function TodayPage() {
             View week
           </Link>
         </div>
+      </section>
+
+      <GoalCountdown />
+
+      <section className="card mt-3 flex items-center justify-between gap-4 px-4 py-3.5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+            Training streak
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {streak === 0
+              ? "Log a session to start your streak."
+              : `${streak} consecutive day${streak === 1 ? "" : "s"}.`}
+          </p>
+        </div>
+        <p className="text-3xl font-semibold tabular-nums text-ink" aria-label={`${streak} day training streak`}>
+          {streak}
+          <span className="ml-1 text-xs font-medium text-muted">days</span>
+        </p>
       </section>
 
       <h2 className="mt-6 mb-3 text-sm font-semibold uppercase tracking-wider text-muted">
@@ -238,6 +277,12 @@ export default async function TodayPage() {
           One session per day — open it to edit sets or notes.
         </p>
       ) : null}
+
+      <PastSessionLogger
+        initialDate={addDays(today, -1)}
+        maxDate={today}
+        dayTypes={dayTypes.map(({ id, name, kind }) => ({ id, name, kind }))}
+      />
 
       <section className="mt-6 rounded-2xl border border-dashed border-line px-4 py-4">
         <h2 className="text-sm font-semibold text-ink">

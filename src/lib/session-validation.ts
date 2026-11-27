@@ -29,5 +29,7 @@ export const weekTargetSchema = z.object({
   target: z.coerce.number().int().min(0).max(30),
 });
 
+export const benchmarkDateSchema = z.object({ date: calendarDate });
+
 export type StartSessionState = { error?: string } | undefined;
 export type SaveResult = { ok: true } | { ok: false; error: string };

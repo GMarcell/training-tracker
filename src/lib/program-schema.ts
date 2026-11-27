@@ -82,8 +82,7 @@ export const EXPERIENCE_LABELS: Record<ProgramRequest["experience"], string> = {
 
 /**
  * Cleans a generated program before validation-independent use: weekdays are
- * deduplicated and sorted, activity days carry no exercises, and only the first
- * match day is kept as a match.
+ * deduplicated and sorted, and only the first match day is kept as a match.
  */
 export function normalizeGeneratedProgram(
   program: GeneratedProgram,
@@ -99,7 +98,7 @@ export function normalizeGeneratedProgram(
       ...day,
       plannedWeekdays,
       isMatch,
-      exercises: day.kind === "ACTIVITY" ? [] : day.exercises,
+      exercises: day.exercises,
     };
   });
 
