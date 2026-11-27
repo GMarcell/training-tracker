@@ -16,6 +16,9 @@ export type CurrentUser = {
   email: string;
   weeklyTarget: number;
   timezone: string;
+  goalName: string | null;
+  goalDate: Date | null;
+  reminderTime: string | null;
   createdAt: Date;
 };
 
@@ -65,6 +68,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       email: true,
       weeklyTarget: true,
       timezone: true,
+      goalName: true,
+      goalDate: true,
+      reminderTime: true,
       createdAt: true,
     },
   });

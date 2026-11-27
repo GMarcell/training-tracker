@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProgressRing } from "@/components/progress-ring";
 import { StartSessionForm } from "@/components/start-session-form";
 import { PastSessionLogger } from "@/components/past-session-logger";
-import { GoalCountdown } from "@/components/phase-four-tools";
+import { ServerGoalCountdown } from "@/components/server-goal-countdown";
 import {
   addDays,
   formatDateOnly,
@@ -145,7 +145,7 @@ export default async function TodayPage() {
         </div>
       </section>
 
-      <GoalCountdown />
+      <ServerGoalCountdown goalName={user.goalName} goalDate={user.goalDate} />
 
       <section className="card mt-3 flex items-center justify-between gap-4 px-4 py-3.5">
         <div>

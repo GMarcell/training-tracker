@@ -16,6 +16,24 @@ export type LoggedEntry = {
 };
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
+const ENTRY_QUEUE = "training-tracker-entry-queue";
+type QueuedEntry = { entryId: string; sets: number; reps: number };
+
+function queueEntry(item: QueuedEntry) {
+  try {
+    const queued = JSON.parse(localStorage.getItem(ENTRY_QUEUE) || "[]") as QueuedEntry[];
+    localStorage.setItem(ENTRY_QUEUE, JSON.stringify([...queued.filter((entry) => entry.entryId !== item.entryId), item]));
+  } catch { /* storage unavailable */ }
+}
+
+async function flushEntryQueue() {
+  try {
+    const queued = JSON.parse(localStorage.getItem(ENTRY_QUEUE) || "[]") as QueuedEntry[];
+    const failed: QueuedEntry[] = [];
+    for (const item of queued) { const result = await saveEntryAction(item); if (!result.ok) failed.push(item); }
+    localStorage.setItem(ENTRY_QUEUE, JSON.stringify(failed));
+  } catch { /* retry after the next online event */ }
+}
 
 function useDebouncedSave(delay = 600) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +77,13 @@ function EntryRow({ entry }: { entry: LoggedEntry }) {
   const latest = useRef({ sets: entry.sets, reps: entry.reps });
 
   useEffect(() => {
+    if (navigator.onLine) void flushEntryQueue();
+    const handleOnline = () => void flushEntryQueue();
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  useEffect(() => {
     latest.current = { sets, reps };
   }, [sets, reps]);
 
@@ -83,8 +108,9 @@ function EntryRow({ entry }: { entry: LoggedEntry }) {
           setStatus("saved");
           setError(null);
         } else {
+          queueEntry({ entryId: entry.id, sets: nextSets, reps: nextReps });
           setStatus("error");
-          setError(result.error);
+          setError("Saved offline; will retry when you reconnect.");
         }
       });
     },

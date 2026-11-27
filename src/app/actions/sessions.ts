@@ -278,3 +278,27 @@ export async function saveBenchmarkAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/progress");
 }
+
+export async function savePhaseFourSettingsAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const goalName = String(formData.get("goalName") ?? "").trim().slice(0, 120) || null;
+  const goalDateRaw = String(formData.get("goalDate") ?? "");
+  const reminderTime = String(formData.get("reminderTime") ?? "").trim().slice(0, 5) || null;
+  const goalDate = /^\d{4}-\d{2}-\d{2}$/.test(goalDateRaw) ? parseDateOnly(goalDateRaw) : null;
+  await prisma.user.update({ where: { id: user.id }, data: { goalName, goalDate, reminderTime } });
+  revalidatePath("/");
+  revalidatePath("/settings");
+}
+
+export async function saveNutritionLogAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const dateRaw = String(formData.get("date") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) return;
+  const number = (name: string) => { const value = Number(formData.get(name)); return Number.isFinite(value) && value >= 0 ? value : null; };
+  await prisma.nutritionLog.upsert({
+    where: { userId_date: { userId: user.id, date: parseDateOnly(dateRaw) } },
+    create: { userId: user.id, date: parseDateOnly(dateRaw), waterLiters: number("water"), proteinGrams: number("protein"), calories: number("calories") === null ? null : Math.round(number("calories") as number) },
+    update: { waterLiters: number("water"), proteinGrams: number("protein"), calories: number("calories") === null ? null : Math.round(number("calories") as number) },
+  });
+  revalidatePath("/settings");
+}
