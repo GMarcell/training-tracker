@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DayKind {
+  TRAINING
+  ACTIVITY
+}
+
+enum Unit {
+  REPS
+  SECONDS
+}
+
+enum Direction {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+  NEUTRAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  weeklyTarget Int      @default(5)
+  timezone     String   @default("Asia/Jakarta")
+  createdAt    DateTime @default(now())
+
+  dayTypes     DayType[]
+  sessions     Session[]
+  metrics      Metric[]
+  benchmarks   Benchmark[]
+  weekTargets  WeekTargetOverride[]
+}
+
+model DayType {
+  id                 String    @id @default(cuid())
+  userId             String
+  name               String
+  kind               DayKind   @default(TRAINING)
+  plannedWeekdays    Int[]     @default([])
+  countsTowardTarget Boolean   @default(true)
+  skipInMatchWeek    Boolean   @default(false)
+  isMatch            Boolean   @default(false)
+  sortOrder          Int       @default(0)
+  archived           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises Exercise[]
+  sessions  Session[]
+
+  @@index([userId])
+}
+
+model Exercise {
+  id         String   @id @default(cuid())
+  dayTypeId  String
+  name       String
+  targetText String   @default("")
+  sortOrder  Int      @default(0)
+  archived   Boolean  @default(false)
+
+  dayType DayType         @relation(fields: [dayTypeId], references: [id], onDelete: Cascade)
+  entries ExerciseEntry[]
+
+  @@index([dayTypeId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  dayTypeId String
+  date      DateTime @db.Date
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayType   DayType         @relation(fields: [dayTypeId], references: [id])
+  entries   ExerciseEntry[]
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model ExerciseEntry {
+  id         String  @id @default(cuid())
+  sessionId  String
+  exerciseId String?
+  name       String
+  sets       Int     @default(0)
+  reps       Int     @default(0)
+  unit       Unit    @default(REPS)
+  note       String?
+  sortOrder  Int     @default(0)
+
+  session  Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+}
+
+model Metric {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  unit        String
+  direction   Direction @default(HIGHER_IS_BETTER)
+  decimals    Int       @default(1)
+  targetMin   Decimal?  @db.Decimal(10, 2)
+  targetMax   Decimal?  @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now())
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  values BenchmarkValue[]
+
+  @@index([userId])
+}
+
+model Benchmark {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  values BenchmarkValue[]
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model BenchmarkValue {
+  id          String  @id @default(cuid())
+  benchmarkId String
+  metricId    String
+  value       Decimal @db.Decimal(8, 2)
+
+  benchmark Benchmark @relation(fields: [benchmarkId], references: [id], onDelete: Cascade)
+  metric    Metric    @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([benchmarkId, metricId])
+  @@index([metricId])
+}
+
+// Required by the weekly-target override feature (a target can differ per week).
+model WeekTargetOverride {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime @db.Date
+  target    Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+}
